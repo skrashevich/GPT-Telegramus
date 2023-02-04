@@ -298,23 +298,21 @@ class BotHandler:
                     escape_char = MARKDOWN_ESCAPE[i]
                     message = message.replace(escape_char, '\\' + escape_char)
 
-                await telegram.Bot(self.settings['telegram_api_key']).sendMessage(chat_id=chat_id,
+                await telegram.Bot(self.settings['telegram_api_key']).editMessageText(chat_id=chat_id,
                                                                                   text=message,
-                                                                                  reply_to_message_id=
-                                                                                  reply_to_message_id,
+                                                                                  message_id=reply_to_message_id,
                                                                                   parse_mode='MarkdownV2')
 
             # Error parsing markdown
             except Exception as e:
                 logging.info(e)
-                await telegram.Bot(self.settings['telegram_api_key']).sendMessage(chat_id=chat_id,
+                await telegram.Bot(self.settings['telegram_api_key']).editMessageText(chat_id=chat_id,
                                                                                   text=message.replace('\\n', '\n'),
-                                                                                  reply_to_message_id=
-                                                                                  reply_to_message_id)
+                                                                                  message_id=reply_to_message_id)
         else:
-            await telegram.Bot(self.settings['telegram_api_key']).sendMessage(chat_id=chat_id,
+            await telegram.Bot(self.settings['telegram_api_key']).editMessageText(chat_id=chat_id,
                                                                               text=message.replace('\\n', '\n'),
-                                                                              reply_to_message_id=reply_to_message_id)
+                                                                              message_id=reply_to_message_id)
 
     def response_loop(self):
         """
