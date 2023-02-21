@@ -15,18 +15,19 @@
  OTHER DEALINGS IN THE SOFTWARE.
 """
 
+import argparse
 import json
 import logging
 import os
 import signal
-import argparse
 
 import psutil
 
-import BotHandler
 import AIHandler
+import Authenticator
+import BotHandler
 
-TELEGRAMUS_VERSION = 'beta_1.0.1'
+TELEGRAMUS_VERSION = 'beta_1.6.0'
 
 # Logging level (INFO for debug, WARN for release)
 LOGGING_LEVEL = logging.INFO
@@ -88,28 +89,10 @@ def parse_args():
     :return:
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('--open_ai_api_key', type=str, help='OpenAI API Key for DALL-E only',
-                        default=os.getenv('TELEGRAMUS_OPEN_AI_API_KEY', None))
-
-    parser.add_argument('--chatgpt_auth_email', type=str, help='OpenAI account login for ChatGPT',
-                        default=os.getenv('TELEGRAMUS_CHATGPT_AUTH_EMAIL', None))
-    parser.add_argument('--chatgpt_auth_password', type=str, help='OpenAI account password for ChatGPT',
-                        default=os.getenv('TELEGRAMUS_CHATGPT_AUTH_PASSWORD', None))
-    parser.add_argument('--chatgpt_auth_proxy', type=str,
-                        help='Custom proxy for auth. See: https://github.com/acheong08/ChatGPT-Proxy',
-                        default=os.getenv('TELEGRAMUS_CHATGPT_AUTH_PROXY', None))
-    parser.add_argument('--chatgpt_auth_insecure', action='store_true',
-                        help='Authentication using the built-in proxy. See: https://github.сom/acheong08/chatgpt',
-                        default=None if os.getenv('TELEGRAMUS_CHATGPT_AUTH_INSECURE', None) is None else
-                        (os.getenv('TELEGRAMUS_CHATGPT_AUTH_INSECURE', 'False').lower()
-                         in ('true', '1', 't', 'y', 'yes')))
-
-    parser.add_argument('--telegram_api_key', type=str, help='Telegram API Key',
-                        default=os.getenv('TELEGRAMUS_TELEGRAM_API_KEY', None))
-    parser.add_argument('--queue_max', type=int, help='Requests queue for chatgpt and dall-e (messages to bot queue)',
-                        default=os.getenv('TELEGRAMUS_QUEUE_MAX', None))
-    parser.add_argument('--image_size', type=str, help='DALL-E image size (256x256 or 512x512 or 1024x1024)',
-                        default=os.getenv('TELEGRAMUS_IMAGE_SIZE', None))
+    parser.add_argument('--settings', type=str, help='settings.json file location',
+                        default=os.getenv('TELEGRAMUS_SETTINGS_FILE', SETTINGS_FILE))
+    parser.add_argument('--messages', type=str, help='messages.json file location',
+                        default=os.getenv('TELEGRAMUS_MESSAGES_FILE', MESSAGES_FILE))
     return parser.parse_args()
 
 
@@ -124,35 +107,21 @@ def main():
     # Connect interrupt signal
     signal.signal(signal.SIGINT, exit_)
 
-    # Load settings and messages
-    settings = load_json(SETTINGS_FILE)
-    messages = load_json(MESSAGES_FILE)
-
-    # Overwrite settings from JSON with CLI arguments
+    # Parse arguments and load settings and messages
     args = parse_args()
-    if args.open_ai_api_key is not None:
-        settings['open_ai_api_key'] = args.open_ai_api_key
-    if args.chatgpt_auth_email is not None:
-        settings['chatgpt_auth_email'] = args.chatgpt_auth_email
-    if args.chatgpt_auth_password is not None:
-        settings['chatgpt_auth_password'] = args.chatgpt_auth_password
-    if args.chatgpt_auth_proxy is not None:
-        settings['chatgpt_auth_proxy'] = args.chatgpt_auth_proxy
-    if args.chatgpt_auth_insecure is not None:
-        settings['chatgpt_auth_insecure'] = args.chatgpt_auth_insecure
-    if args.telegram_api_key is not None:
-        settings['telegram_api_key'] = args.telegram_api_key
-    if args.queue_max is not None:
-        settings['queue_max'] = args.queue_max
-    if args.image_size is not None:
-        settings['image_size'] = args.image_size
+    settings = load_json(args.settings)
+    messages = load_json(args.messages)
 
-    # Initialize BotHandler and AIHandler classes
-    ai_handler = AIHandler.AIHandler(settings)
+    # Initialize classes
+    authenticator = Authenticator.Authenticator(settings)
+    ai_handler = AIHandler.AIHandler(settings, authenticator)
     bot_handler = BotHandler.BotHandler(settings, messages, ai_handler)
 
     # Set requests_queue to ai_handler
     ai_handler.requests_queue = bot_handler.requests_queue
+
+    # Start checker loop
+    authenticator.start_check_loop()
 
     # Start AIHandler
     ai_handler.thread_start()
