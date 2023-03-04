@@ -49,54 +49,63 @@ Support the project by buying and listening to my music 🎵
 1. Install Python and pip
 2. Download source code
 3. Install requirements `pip install -r requirements.txt --upgrade`
-4. Create account at OpenAI using email and password
-5. Type OpenAI account email and password into `email` and `password` in `chatgpt_auth` in `settings.json` file
+4. For **API type 1** (recommended) (revChatGPT API V1, free, uses same model as official website):
+   1. Create account at OpenAI. Make sure you have access to https://chat.openai.com/
+   2. Open https://chat.openai.com/api/auth/session
+   3. Copy value of `accessToken` into `access_token` in `chatgpt_auth` in `chatgpt_api_1` in `settings.json` file
+   5. Configure proxy if needed
+5. For **API type 0** (Official API, more "stupid" model, uses credits):
+   1. Generate API Key https://platform.openai.com/account/api-keys and paste it into `open_ai_api_key` in `chatgpt_api_0` in `settings.json` file
 6. For DALL-E, generate API Key https://platform.openai.com/account/api-keys
 7. Type Generated OpenAI API Key into `open_ai_api_key` in `dalle` in `settings.json` file
 8. Create bot at https://t.me/BotFather
 9. Type Bot's token into `api_key` in `telegram` in `settings.json` file
-10. If you have conversation id you can specify it in `conversation_id` in `chatgpt_dialog` in `settings.json` file
-11. Run main script `python main.py`
+10. Run main script `python main.py`
 
 Example `settings.json`:
 ```json
 {
   "modules": {
     "chatgpt": true,
+    "chatgpt_api_type": 1,
     "dalle": true
   },
-   
-  "chatgpt_auth": {
-    "email": "myemail@domain.com",
-    "password": "12345qwerty",
-    "session_token": "",
-    "access_token": ""
+  
+  "chatgpt_api_0": {
+    "open_ai_api_key": "sk-2xxxxxxXXxXXXxxXXXxxXXXXXXXXXXXxxxxxxxxxxxxxxxXX",
+    "engine": "text-davinci-003",
+    "proxy": ""
   },
-   
-  "proxy": {
-    "enabled": true,
-    "auto": true,
-    "https_only": true,
-    "manual_proxy": "http://111.222.123.111:443",
-    "check_interval_seconds": 300,
-    "check_message": "1+1",
-    "check_message_timeout": 120,
-    "check_reply_must_include": "2",
-    "max_number_of_processes": 5,
-    "initialization_timeout": 60
+  
+  "chatgpt_api_1": {
+    "chatgpt_auth": {
+      "email": "",
+      "password": "",
+      "session_token": "",
+      "access_token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.........."
+    },
+	
+    "proxy": {
+      "enabled": true,
+      "auto": true,
+      "https_only": true,
+      "manual_proxy": "http://111.222.123.111:443",
+      "check_interval_seconds": 300,
+      "check_message": "1+1",
+      "check_message_timeout": 240,
+      "check_reply_must_include": "2",
+      "max_number_of_processes": 5,
+      "initialization_timeout": 60,
+      "too_many_requests_wait_time_seconds": 600
+    }
   },
-   
+  
   "dalle": {
-    "open_ai_api_key": "sk-1xxxxxxXXxXXXxxXXXxxXXXXXXXXXXXxxxxxxxxxxxxxxxXX",
+    "open_ai_api_key": "sk-2xxxxxxXXxXXXxxXXXxxXXXXXXXXXXXxxxxxxxxxxxxxxxXX",
     "image_size": "512x512",
     "use_proxy": true
   },
-   
-  "chatgpt_dialog": {
-    "conversation_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "parent_id": ""
-  },
-   
+  
   "telegram": {
     "api_key": "1234567890:XXXxXxxXxxXXxxXXX-XXXXXXXxXxxxXxXxX",
     "queue_max": 5,
@@ -146,6 +155,8 @@ Note: make shure you don't delete argumensts `{0}` in message and please restart
 
 ## Running in Docker
 
+**WARNING: not tested and not recommended**
+
 1. Install Docker
 2. Clone repo
 3. Build container
@@ -157,10 +168,11 @@ Note: make shure you don't delete argumensts `{0}` in message and please restart
     docker run -d -e TELEGRAMUS_SETTINGS_FILE=you_settings_file_location -e TELEGRAMUS_MESSAGES_FILE=you_messages_file_location --name gpt-telegramus --restart on-failure telegramus
     ```
 
-**Note:** You can specify settings and messages file location. (default location is in project folder):
+**Note:** You can specify settings, messages and chats file location. (default location is in project folder):
 ```dockerfile
 ENV TELEGRAMUS_SETTINGS_FILE "settings.json"
 ENV TELEGRAMUS_MESSAGES_FILE "messages.json"
+ENV TELEGRAMUS_MESSAGES_FILE "chats.json"
 ```
 
 ----------
@@ -197,15 +209,24 @@ If you have proxy that definitely works you can specify it in `manual_proxy` in 
 - `/start` - Shows version
 - `/help` - Shows list of commands
 - `/queue` - Shows requests queue
-- `/gpt YOUR REQUEST` - Request to ChatGPT
+- `/gpt YOUR REQUEST` - Request to ChatGPT (or just type your request as message without `/gpt` command)
 - `/draw YOUR REQUEST` - Request to DALLE
-- Or just type your request as message without `/gpt` command
+- `/clears` - Clears chat history
+- `/restart` - Restart chatGPT and Telegram Bot (not tested properly)
+- Type any message to ask chatGPT (without `/gpt` command)
+
+----------
+
+## Chat history
+
+File `chats.json` saves `conversation_id` and `parent_id` for each telegram chat to prevent history collision
+
+It only works properly if `chatgpt_api_type` is set to `1`
 
 ----------
 
 ## TODO
 
-- Make database for every dialog with separate `conversation_id`
 - Make whitelist for users and admin account
 
 ----------
