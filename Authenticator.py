@@ -98,7 +98,7 @@ class Authenticator:
             if len(proxy_) > 0:
                 self.current_proxy = proxy_
             try:
-                from revChatGPT.V0 import Chatbot
+                from revChatGPT.V3 import Chatbot
                 # Initialize chatbot
                 self.chatbot = Chatbot(str(self.settings['chatgpt_api_0']['open_ai_api_key']),
                                        engine=str(self.settings['chatgpt_api_0']['engine']),
